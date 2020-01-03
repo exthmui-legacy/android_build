@@ -143,11 +143,11 @@ function check_product()
         return
     fi
     if (echo -n $1 | grep -q -e "^lineage_") ; then
-        LINEAGE_BUILD=$(echo -n $1 | sed -e 's/^lineage_//g')
+        EXTHM_BUILD=$(echo -n $1 | sed -e 's/^lineage_//g')
     else
-        LINEAGE_BUILD=
+        EXTHM_BUILD=
     fi
-    export LINEAGE_BUILD
+    export EXTHM_BUILD
 
         TARGET_PRODUCT=$1 \
         TARGET_BUILD_VARIANT= \
