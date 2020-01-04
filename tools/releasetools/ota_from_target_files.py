@@ -967,6 +967,33 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
   device_specific.FullOTA_InstallBegin()
 
+  # exTHmUI flash output begin
+  # Get information from build.prop
+  android_exthmui_version = target_info.GetBuildProp("ro.build.version.release")
+  exthmui_build_id = target_info.GetBuildProp("ro.build.id")
+  exthmui_android-security-patch_date = target_info.GetBuildProp("ro.build.version.security_patch")
+  exthmui_build_user = target_info.GetBuildProp("ro.build.user")
+  exthmui_device_name = target_info.GetBuildProp("ro.product.name")
+  exthmui_target_model = target_info.GetBuildProp("ro.product.model")
+  exthmui_build_sdk = target_info.GetBuildProp("ro.build.version.sdk")
+  exthmui_build_date = target_info.GetBuildProp("ro.build.date")
+
+  # Start output
+  script.Print("----------------------------------------------")
+  script.Print(" exTHmUI")
+  script.Print(" for %s"%(exthmui_device_name))
+  script.Print(" Based on LineageOS")
+  script.Print("ROM Information")
+  script.Print("Build date: %s"%(exthmui_build_date))
+  script.Print("Android version: %s"%(android_exthmui_version))
+  script.Print("Build ID: %s"%(exthmui_build_id))
+  script.Print("Build SDK version: %s"%(exthmui_build_sdk))
+  script.Print("Security patch level: %s"%(exthmui_android-security-patch_date))
+  script.Print("Build user: %s"%(exthmui_build_user))
+  script.Print("----------------------------------------------")
+  script.Print("Installing exTHmUI to your %s"%(exthmui_target_model))
+  script.Print("Please wait about 1 minute")
+
   CopyInstallTools(output_zip)
   script.UnpackPackageDir("install", "/tmp/install")
   script.SetPermissionsRecursive("/tmp/install", 0, 0, 0o755, 0o644, None, None)
