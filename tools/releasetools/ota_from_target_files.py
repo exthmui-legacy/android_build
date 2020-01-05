@@ -971,7 +971,7 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   # Get information from build.prop
   android_exthmui_version = target_info.GetBuildProp("ro.build.version.release")
   exthmui_build_id = target_info.GetBuildProp("ro.build.id")
-  exthmui_android-security-patch_date = target_info.GetBuildProp("ro.build.version.security_patch")
+  exthmui_android_security_patch_date = target_info.GetBuildProp("ro.build.version.security_patch")
   exthmui_build_user = target_info.GetBuildProp("ro.build.user")
   exthmui_device_name = target_info.GetBuildProp("ro.product.name")
   exthmui_target_model = target_info.GetBuildProp("ro.product.model")
@@ -988,7 +988,7 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   script.Print("Android version: %s"%(android_exthmui_version))
   script.Print("Build ID: %s"%(exthmui_build_id))
   script.Print("Build SDK version: %s"%(exthmui_build_sdk))
-  script.Print("Security patch level: %s"%(exthmui_android-security-patch_date))
+  script.Print("Security patch level: %s"%(exthmui_android_security_patch_date))
   script.Print("Build user: %s"%(exthmui_build_user))
   script.Print("----------------------------------------------")
   script.Print("Installing exTHmUI to your %s"%(exthmui_target_model))
