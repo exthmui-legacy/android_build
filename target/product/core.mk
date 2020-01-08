@@ -26,7 +26,7 @@ PRODUCT_PACKAGES += \
     BookmarkProvider \
     Browser2 \
     BuiltInPrintService \
-    Calendar \
+    Lawnchair \
     CalendarProvider \
     CaptivePortalLogin \
     CertInstaller \
@@ -34,7 +34,6 @@ PRODUCT_PACKAGES += \
     DeskClock \
     DocumentsUI \
     DownloadProviderUi \
-    Email \
     ExactCalculator \
     ExternalStorageProvider \
     FusedLocation \
