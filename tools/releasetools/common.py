@@ -390,7 +390,7 @@ class BuildInfo(object):
           "system_other"] = self._partition_fingerprints["system"]
 
     # These two should be computed only after setting self._oem_props.
-    self._device = self.GetOemProperty("ro.product.device")
+    self._device = info_dict.get("ota_override_device", self.GetOemProperty("ro.product.device"))
     self._fingerprint = self.CalculateFingerprint()
     check_fingerprint(self._fingerprint)
 
@@ -900,9 +900,10 @@ def LoadRecoveryFSTab(read_helper, fstab_version, recovery_fstab_path,
         context = i
 
     mount_point = pieces[1]
-    d[mount_point] = Partition(mount_point=mount_point, fs_type=pieces[2],
-                               device=pieces[0], length=length, context=context,
-                               slotselect=slotselect)
+    if not d.get(mount_point):
+        d[mount_point] = Partition(mount_point=mount_point, fs_type=pieces[2],
+                                   device=pieces[0], length=length, context=context,
+                                   slotselect=slotselect)
 
   # / is used for the system mount point when the root directory is included in
   # system. Other areas assume system is always at "/system" so point /system
@@ -1152,7 +1153,7 @@ def BuildVBMeta(image_path, partitions, name, needed_partitions):
     assert OPTIONS.aftl_signer_helper is not None, 'No AFTL signer helper provided.'
     # AFTL inclusion proof generation code will go here.
 
-def _MakeRamdisk(sourcedir, fs_config_file=None, lz4_ramdisks=False):
+def _MakeRamdisk(sourcedir, fs_config_file=None, lz4_ramdisks=False, xz_ramdisks=False):
   ramdisk_img = tempfile.NamedTemporaryFile()
 
   if fs_config_file is not None and os.access(fs_config_file, os.F_OK):
@@ -1163,6 +1164,9 @@ def _MakeRamdisk(sourcedir, fs_config_file=None, lz4_ramdisks=False):
   p1 = Run(cmd, stdout=subprocess.PIPE)
   if lz4_ramdisks:
     p2 = Run(["lz4", "-l", "-12" , "--favor-decSpeed"], stdin=p1.stdout,
+             stdout=ramdisk_img.file.fileno())
+  elif xz_ramdisks:
+    p2 = Run(["xz", "-f", "-c", "--check=crc32", "--lzma2=dict=32MiB"], stdin=p1.stdout,
              stdout=ramdisk_img.file.fileno())
   else:
     p2 = Run(["minigzip"], stdin=p1.stdout, stdout=ramdisk_img.file.fileno())
@@ -1209,7 +1213,8 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
 
   if has_ramdisk:
     use_lz4 = info_dict.get("lz4_ramdisks") == 'true'
-    ramdisk_img = _MakeRamdisk(sourcedir, fs_config_file, lz4_ramdisks=use_lz4)
+    use_xz = info_dict.get("xz_ramdisks") == 'true'
+    ramdisk_img = _MakeRamdisk(sourcedir, fs_config_file, lz4_ramdisks=use_lz4, xz_ramdisks=use_xz)
 
   # use MKBOOTIMG from environ, or "mkbootimg" if empty or not set
   mkbootimg = os.getenv('MKBOOTIMG') or "mkbootimg"
@@ -1240,6 +1245,11 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file, info_dict=None,
   if os.access(fn, os.F_OK):
     cmd.append("--pagesize")
     cmd.append(open(fn).read().rstrip("\n"))
+
+  fn = os.path.join(sourcedir, "dt")
+  if os.access(fn, os.F_OK):
+    cmd.append("--dt")
+    cmd.append(fn)
 
   if partition_name == "recovery":
     args = info_dict.get("recovery_mkbootimg_args")
@@ -1394,7 +1404,8 @@ def _BuildVendorBootImage(sourcedir, info_dict=None):
   img = tempfile.NamedTemporaryFile()
 
   use_lz4 = info_dict.get("lz4_ramdisks") == 'true'
-  ramdisk_img = _MakeRamdisk(sourcedir, lz4_ramdisks=use_lz4)
+  use_xz = info_dict.get("xz_ramdisks") == 'true'
+  ramdisk_img = _MakeRamdisk(sourcedir, lz4_ramdisks=use_lz4, xz_ramdisks=use_xz)
 
   # use MKBOOTIMG from environ, or "mkbootimg" if empty or not set
   mkbootimg = os.getenv('MKBOOTIMG') or "mkbootimg"
@@ -2408,6 +2419,11 @@ class DeviceSpecificParams(object):
     used to install the image for the device's baseband processor."""
     return self._DoCall("FullOTA_InstallEnd")
 
+  def FullOTA_PostValidate(self):
+    """Called after installing and validating /system; typically this is
+    used to resize the system partition after a block based installation."""
+    return self._DoCall("FullOTA_PostValidate")
+
   def IncrementalOTA_Assertions(self):
     """Called after emitting the block of assertions at the top of an
     incremental OTA package.  Implementations can add whatever
@@ -3026,12 +3042,10 @@ def MakeRecoveryPatch(input_dir, output_sink, recovery_img, boot_img,
     # In this case, the output sink is rooted at VENDOR
     recovery_img_path = "etc/recovery.img"
     recovery_resource_dat_path = "VENDOR/etc/recovery-resource.dat"
-    sh_dir = "bin"
   else:
     # In this case the output sink is rooted at SYSTEM
     recovery_img_path = "vendor/etc/recovery.img"
     recovery_resource_dat_path = "SYSTEM/vendor/etc/recovery-resource.dat"
-    sh_dir = "vendor/bin"
 
   if full_recovery_image:
     output_sink(recovery_img_path, recovery_img.data)
@@ -3114,11 +3128,7 @@ fi
 
   # The install script location moved from /system/etc to /system/bin in the L
   # release. In the R release it is in VENDOR/bin or SYSTEM/vendor/bin.
-  sh_location = os.path.join(sh_dir, "install-recovery.sh")
-
-  logger.info("putting script in %s", sh_location)
-
-  output_sink(sh_location, sh.encode())
+  output_sink("bin/install-recovery.sh", sh.encode())
 
 
 class DynamicPartitionUpdate(object):
@@ -3157,10 +3167,11 @@ class DynamicGroupUpdate(object):
 
 class DynamicPartitionsDifference(object):
   def __init__(self, info_dict, block_diffs, progress_dict=None,
-               source_info_dict=None):
+               source_info_dict=None, build_without_vendor=False):
     if progress_dict is None:
       progress_dict = {}
 
+    self._build_without_vendor = build_without_vendor
     self._remove_all_before_apply = False
     if source_info_dict is None:
       self._remove_all_before_apply = True
@@ -3284,6 +3295,17 @@ class DynamicPartitionsDifference(object):
 
     def comment(line):
       self._op_list.append("# %s" % line)
+
+    if self._build_without_vendor:
+      comment('System-only build, keep original vendor partition')
+      # When building without vendor, we do not want to override
+      # any partition already existing. In this case, we can only
+      # resize, but not remove / create / re-create any other
+      # partition.
+      for p, u in self._partition_updates.items():
+        comment('Resize partition %s to %s' % (p, u.tgt_size))
+        append('resize %s %s' % (p, u.tgt_size))
+      return
 
     if self._remove_all_before_apply:
       comment('Remove all existing dynamic partitions and groups before '

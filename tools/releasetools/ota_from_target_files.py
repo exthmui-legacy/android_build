@@ -202,6 +202,10 @@ A/B OTA specific options
       ones. Should only be used if caller knows it's safe to do so (e.g. all the
       postinstall work is to dexopt apps and a data wipe will happen immediately
       after). Only meaningful when generating A/B OTAs.
+
+  --backup <boolean>
+      Enable or disable the execution of backuptool.sh.
+      Disabled by default.
 """
 
 from __future__ import print_function
@@ -266,13 +270,14 @@ OPTIONS.output_metadata_path = None
 OPTIONS.disable_fec_computation = False
 OPTIONS.force_non_ab = False
 OPTIONS.boot_variable_file = None
+OPTIONS.backuptool = False
 
 
 METADATA_NAME = 'META-INF/com/android/metadata'
 POSTINSTALL_CONFIG = 'META/postinstall_config.txt'
 DYNAMIC_PARTITION_INFO = 'META/dynamic_partitions_info.txt'
 AB_PARTITIONS = 'META/ab_partitions.txt'
-UNZIP_PATTERN = ['IMAGES/*', 'META/*', 'OTA/*', 'RADIO/*']
+UNZIP_PATTERN = ['IMAGES/*', 'INSTALL/*', 'META/*', 'OTA/*', 'RADIO/*']
 # Files to be unzipped for target diffing purpose.
 TARGET_DIFFING_UNZIP_PATTERN = ['BOOT', 'RECOVERY', 'SYSTEM/*', 'VENDOR/*',
                                 'PRODUCT/*', 'SYSTEM_EXT/*', 'ODM/*']
@@ -538,11 +543,16 @@ def _WriteRecoveryImageToBoot(script, output_zip):
 
 def HasRecoveryPatch(target_files_zip, info_dict):
   board_uses_vendorimage = info_dict.get("board_uses_vendorimage") == "true"
+  board_builds_vendorimage = info_dict.get("board_builds_vendorimage") == "true"
+  target_files_dir = None
 
-  if board_uses_vendorimage:
+  if board_builds_vendorimage:
     target_files_dir = "VENDOR"
-  else:
+  elif not board_uses_vendorimage:
     target_files_dir = "SYSTEM/vendor"
+
+  if target_files_dir is None:
+    return True
 
   patch = "%s/recovery-from-boot.p" % target_files_dir
   img = "%s/etc/recovery.img" %target_files_dir
@@ -708,6 +718,15 @@ def GetBlockDifferences(target_zip, source_zip, target_info, source_info,
   return block_diff_dict
 
 
+def CopyInstallTools(output_zip):
+  install_path = os.path.join(OPTIONS.input_tmp, "INSTALL")
+  for root, subdirs, files in os.walk(install_path):
+     for f in files:
+      install_source = os.path.join(root, f)
+      install_target = os.path.join("install", os.path.relpath(root, install_path), f)
+      output_zip.write(install_source, install_target)
+
+
 def WriteFullOTAPackage(input_zip, output_file):
   target_info = common.BuildInfo(OPTIONS.info_dict, OPTIONS.oem_dicts)
 
@@ -742,9 +761,9 @@ def WriteFullOTAPackage(input_zip, output_file):
   assert HasRecoveryPatch(input_zip, info_dict=OPTIONS.info_dict)
 
   # Assertions (e.g. downgrade check, device properties check).
-  ts = target_info.GetBuildProp("ro.build.date.utc")
-  ts_text = target_info.GetBuildProp("ro.build.date")
-  script.AssertOlderBuild(ts, ts_text)
+  #ts = target_info.GetBuildProp("ro.build.date.utc")
+  #ts_text = target_info.GetBuildProp("ro.build.date")
+  #script.AssertOlderBuild(ts, ts_text)
 
   target_info.WriteDeviceAssertions(script, OPTIONS.oem_no_mount)
   device_specific.FullOTA_Assertions()
@@ -805,6 +824,19 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
 
   device_specific.FullOTA_InstallBegin()
 
+  CopyInstallTools(output_zip)
+  script.UnpackPackageDir("install", "/tmp/install")
+  script.SetPermissionsRecursive("/tmp/install", 0, 0, 0o755, 0o644, None, None)
+  script.SetPermissionsRecursive("/tmp/install/bin", 0, 0, 0o755, 0o755, None, None)
+
+  if target_info.get("system_root_image") == "true":
+    sysmount = "/"
+  else:
+    sysmount = "/system"
+
+  if OPTIONS.backuptool:
+    script.RunBackup("backup", sysmount, target_info.get('use_dynamic_partitions') == "true")
+
   # All other partitions as well as the data wipe use 10% of the progress, and
   # the update of the system partition takes the remaining progress.
   system_progress = 0.9 - (len(block_diff_dict) - 1) * 0.1
@@ -819,7 +851,8 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
     dynamic_partitions_diff = common.DynamicPartitionsDifference(
         info_dict=OPTIONS.info_dict,
         block_diffs=block_diff_dict.values(),
-        progress_dict=progress_dict)
+        progress_dict=progress_dict,
+        build_without_vendor=(not HasPartition(input_zip, "vendor")))
     dynamic_partitions_diff.WriteScript(script, output_zip,
                                         write_verify_script=OPTIONS.verify)
   else:
@@ -834,6 +867,12 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
       "boot.img", "boot.img", OPTIONS.input_tmp, "BOOT")
   common.CheckSize(boot_img.data, "boot.img", target_info)
   common.ZipWriteStr(output_zip, "boot.img", boot_img.data)
+
+  device_specific.FullOTA_PostValidate()
+
+  if OPTIONS.backuptool:
+    script.ShowProgress(0.02, 10)
+    script.RunBackup("restore", sysmount, target_info.get('use_dynamic_partitions') == "true")
 
   script.WriteRawImage("/boot", "boot.img")
 
@@ -2107,6 +2146,8 @@ def main(argv):
       OPTIONS.force_non_ab = True
     elif o == "--boot_variable_file":
       OPTIONS.boot_variable_file = a
+    elif o in ("--backup"):
+      OPTIONS.backuptool = bool(a.lower() == 'true')
     else:
       return False
     return True
@@ -2145,6 +2186,7 @@ def main(argv):
                                  "disable_fec_computation",
                                  "force_non_ab",
                                  "boot_variable_file=",
+                                 "backup=",
                              ], extra_option_handler=option_handler)
 
   if len(args) != 2:
