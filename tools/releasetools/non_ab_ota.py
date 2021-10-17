@@ -211,41 +211,41 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   # Dump fingerprints
   script.Print("Target: {}".format(target_info.fingerprint))
 
-  android_version = target_info.GetBuildProp("ro.build.version.release")
-  build_id = target_info.GetBuildProp("ro.build.id")
-  build_date = target_info.GetBuildProp("ro.build.date")
-  security_patch = target_info.GetBuildProp("ro.build.version.security_patch")
-  device = target_info.GetBuildProp("ro.product.device")
+  androidver = target_info.GetBuildProp("ro.build.version.release")
+  buildid = target_info.GetBuildProp("ro.build.id")
+  builddate = target_info.GetBuildProp("ro.build.date")
+  securep = target_info.GetBuildProp("ro.build.version.security_patch")
+  name = target_info.GetBuildProp("ro.product.name")
+  model = target_info.GetBuildProp("ro.product.model")
+  manufacturer = target_info.GetBuildProp("ro.product.manufacturer")
+  builduser = target_info.GetBuildProp("ro.build.user")
+  buildsdk = target_info.GetBuildProp("ro.build.version.sdk")
 
-  script.Print("=================================================");
-  script.Print("");
-  script.Print("                     ''                  ");
-  script.Print("               `````.oy.```````          ");
-  script.Print("            ```````:dMMh.````````        ");
-  script.Print("          ```````.sMMMMMy.`````````      ");
-  script.Print("        ```````./mMMMMMMMy.``````````    ");
-  script.Print("       ```````-yMMMMMMMMMMy.``````````   ");
-  script.Print("       `````./mMMNNNMMMMMMMy.``````````  ");
-  script.Print("      `````-ymmhMMMMMMhNMMMMs.`````````  ");
-  script.Print("      ````./M..```````.-odMMMs.````````  ");
-  script.Print("      ```````````````````./hMMs.```````  ");
-  script.Print("       ````````````````````./dMs.``````  ");
-  script.Print("        ``````````````````````.+ms`````  ");
-  script.Print("         ```````````````````````-yo```   ");
-  script.Print("          ``````````````````````...d`    ");
-  script.Print("            ````````````````````` `` .   ");
-  script.Print("               ````````````````          ");
-  script.Print("");
-  script.Print("                    ArrowOS");
-  script.Print("");
-  script.Print("=================================================");
-  script.Print(" Android version  : %s"%(android_version));
-  script.Print(" Build id         : %s"%(build_id));
-  script.Print(" Build date       : %s"%(build_date));
-  script.Print(" Security patch   : %s"%(security_patch));
-  script.Print(" Device           : %s"%(device));
-  script.Print("=================================================");
-
+  # Start output
+  script.Print("----------------------------------------------")
+  script.Print("           _____ _   _             _   _ ___ ")
+  script.Print("  _____  _|_   _| | | |_ __ ___   | | | |_ _|")
+  script.Print(" / _ \ \/ / | | | |_| | '_ ` _ \  | | | || |")
+  script.Print("|  __/>  <  | | |  _  | | | | | | | |_| || |")
+  script.Print(" \___/_/\_\ |_| |_| |_|_| |_| |_|  \___/|___|")
+  script.Print("")
+  script.Print("         extended TouHou modified UI")
+  script.Print("            Based on CAF AOSP")
+  script.Print("----------------------------------------------")
+  script.Print("ROM Information    :")
+  script.Print("Build Date         : %s"%(builddate))
+  script.Print("Android Version    : %s"%(androidver))
+  script.Print("exTHmUI Version    : %s"%(buildid))
+  script.Print("SDK Version        : %s"%(buildsdk))
+  script.Print("Security Patch Date: %s"%(securep))
+  script.Print("----------------------------------------------")
+  script.Print("Device Information :")
+  script.Print("Manufacturer       : %s"%(manufacturer))
+  script.Print("Name               : %s"%(name))
+  script.Print("Model              : %s"%(model))
+  script.Print("----------------------------------------------")
+  script.Print("Installing exTHmUI to your device...")
+  script.Print("")
   device_specific.FullOTA_InstallBegin()
 
   # All other partitions as well as the data wipe use 10% of the progress, and

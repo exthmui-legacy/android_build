@@ -5391,37 +5391,35 @@ $(INTERNAL_OTA_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(OTA_FROM_TARGET_
 	@echo "Package OTA: $@"
 	$(call build-ota-package-target,$@,-k $(KEY_CERT_PAIR) --output_metadata_path $(INTERNAL_OTA_METADATA))
 
-ARROW_TARGET_PACKAGE := $(PRODUCT_OUT)/$(ARROW_VERSION).zip
+EXTHM_TARGET_PACKAGE := $(PRODUCT_OUT)/exthm-$(EXTHM_VERSION).zip
 
 .PHONY: otapackage bacon
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 bacon: otapackage
-	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(ARROW_TARGET_PACKAGE)
-	$(hide) $(MD5SUM) $(ARROW_TARGET_PACKAGE) > $(ARROW_TARGET_PACKAGE).md5sum
-	echo -e "========================================="
-	echo -e ""
-	echo -e "                 \033[1;34m''\033[0m                  "
-	echo -e "           \`\`\`\`\`\033[1;34m.oy.\033[0m\`\`\`\`\`\`\`          "
-	echo -e "        \`\`\`\`\`\`\`\033[1;34m:dMMh.\033[0m\`\`\`\`\`\`\`\`        "
-	echo -e "      \`\`\`\`\`\`\`\033[1;34m.sMMMMMy.\033[0m\`\`\`\`\`\`\`\`\`      "
-	echo -e "    \`\`\`\`\`\`\`\033[1;34m./mMMMMMMMy.\033[0m\`\`\`\`\`\`\`\`\`\`    "
-	echo -e "   \`\`\`\`\`\`\`\033[1;34m-yMMMMMMMMMMy.\033[0m\`\`\`\`\`\`\`\`\`\`   "
-	echo -e "   \`\`\`\`\`\033[1;34m./mMMNNNMMMMMMMy.\033[0m\`\`\`\`\`\`\`\`\`\`  "
-	echo -e "  \`\`\`\`\`\033[1;34m-ymmhMMMMMMhNMMMMs.\033[0m\`\`\`\`\`\`\`\`\`  "
-	echo -e "  \`\`\`\`\033[1;34m./M..\033[0m\`\`\`\`\`\`\`\033[1;34m.-odMMMs.\033[0m\`\`\`\`\`\`\`\`  "
-	echo -e "  \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\033[1;34m./hMMs.\033[0m\`\`\`\`\`\`\`  "
-	echo -e "   \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\033[1;34m./dMs.\033[0m\`\`\`\`\`\`  "
-	echo -e "    \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\033[1;34m.+ms\033[0m\`\`\`\`\`  "
-	echo -e "     \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\033[1;34m-yo\033[0m\`\`\`   "
-	echo -e "      \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\033[1;34m...d\033[0m\`    "
-	echo -e "        \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\` \`\` \033[1;34m.   \033[0m"
-	echo -e "           \`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`          "
-	echo -e ""
-	echo -e "                ArrowOS"
-	echo -e ""
-	echo -e "========================================="
-	echo -e ""
-	@echo "**Package complete"**: $(ARROW_TARGET_PACKAGE)"
+	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(EXTHM_TARGET_PACKAGE)
+	$(hide) $(SHA256) $(EXTHM_TARGET_PACKAGE) | sed "s|$(PRODUCT_OUT)/||" > $(EXTHM_TARGET_PACKAGE).sha256sum
+	echo -e ${CL_CYN}""${CL_RST}
+	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m"${CL_RST}
+	echo -e ${CL_CYN}""${CL_RST}
+	echo -e ${CL_CYN}"\033[31m                        _/_/_/_/_/  _/    _/                      _/    _/  _/_/_/  \033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[32m     _/_/    _/    _/      _/      _/    _/  _/_/_/  _/_/        _/    _/    _/     \033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[33m  _/_/_/_/    _/_/        _/      _/_/_/_/  _/    _/    _/      _/    _/    _/      \033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[34m _/        _/    _/      _/      _/    _/  _/    _/    _/      _/    _/    _/       \033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[35m  _/_/_/  _/    _/      _/      _/    _/  _/    _/    _/        _/_/    _/_/_/      \033[0m"${CL_RST}
+	echo -e ${CL_CYN}""${CL_RST}
+	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m "${CL_RST}
+	echo -e ${CL_CYN}"\033[36mexTHmUI -- Based on CAF AOSP\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[36mVisit our website https://exthmui.cn or our source repo https://github.com/exthmui\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[36mfor more information. \033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[36mSpecial Thanks:cjybyjk, Col_or, KevinZonda, kmou424, GoogleChinaCEO, ISNing,\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[36mand all the other individuals and organizations that contribute!\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[31m==============================-Package Build Information-==============================\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"Package File: $(EXTHM_TARGET_PACKAGE)" >&2 ${CL_RST}
+	echo -e ${CL_CYN}"SHA256: "${CL_MAG}" `cat $(EXTHM_TARGET_PACKAGE).sha256sum | cut -d ' ' -f 1`"${CL_RST}
+	echo -e ${CL_CYN}"Size:"${CL_MAG}" `ls -lah $(EXTHM_TARGET_PACKAGE) | cut -d ' ' -f 5`"${CL_RST}
+	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m"${CL_RST}
+	@echo "**Package complete"**: $(EXTHM_TARGET_PACKAGE)"
 
 ifeq ($(BOARD_BUILD_RETROFIT_DYNAMIC_PARTITIONS_OTA_PACKAGE),true)
 name := $(product_name)-ota-retrofit-$(FILE_NAME_TAG)
