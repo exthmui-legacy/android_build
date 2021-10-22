@@ -5397,7 +5397,7 @@ EXTHM_TARGET_PACKAGE := $(PRODUCT_OUT)/exthm-$(EXTHM_VERSION).zip
 otapackage: $(INTERNAL_OTA_PACKAGE_TARGET)
 bacon: otapackage
 	$(hide) ln -f $(INTERNAL_OTA_PACKAGE_TARGET) $(EXTHM_TARGET_PACKAGE)
-	$(hide) $(SHA256) $(EXTHM_TARGET_PACKAGE) | sed "s|$(PRODUCT_OUT)/||" > $(EXTHM_TARGET_PACKAGE).sha256sum
+	$(hide) sha256sum $(EXTHM_TARGET_PACKAGE) > $(EXTHM_TARGET_PACKAGE).sha256sum
 	echo -e ${CL_CYN}""${CL_RST}
 	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m"${CL_RST}
 	echo -e ${CL_CYN}""${CL_RST}
