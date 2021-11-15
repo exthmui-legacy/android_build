@@ -230,7 +230,7 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
   script.Print(" \___/_/\_\ |_| |_| |_|_| |_| |_|  \___/|___|")
   script.Print("")
   script.Print("         extended TouHou modified UI")
-  script.Print("            Based on CAF AOSP")
+  script.Print("            Based on AOSP")
   script.Print("----------------------------------------------")
   script.Print("ROM Information    :")
   script.Print("Build Date         : %s"%(builddate))
