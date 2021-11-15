@@ -5408,7 +5408,7 @@ bacon: otapackage
 	echo -e ${CL_CYN}"\033[35m  _/_/_/  _/    _/      _/      _/    _/  _/    _/    _/        _/_/    _/_/_/      \033[0m"${CL_RST}
 	echo -e ${CL_CYN}""${CL_RST}
 	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m "${CL_RST}
-	echo -e ${CL_CYN}"\033[36mexTHmUI -- Based on CAF AOSP\033[0m"${CL_RST}
+	echo -e ${CL_CYN}"\033[36mexTHmUI -- Based on AOSP\033[0m"${CL_RST}
 	echo -e ${CL_CYN}"\033[36mVisit our website https://exthmui.cn or our source repo https://github.com/exthmui\033[0m"${CL_RST}
 	echo -e ${CL_CYN}"\033[36mfor more information. \033[0m"${CL_RST}
 	echo -e ${CL_CYN}"\033[31m=======================================================================================\033[0m"${CL_RST}
