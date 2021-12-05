@@ -1095,9 +1095,10 @@ def LoadRecoveryFSTab(read_helper, fstab_version, recovery_fstab_path,
         context = i
 
     mount_point = pieces[1]
-    d[mount_point] = Partition(mount_point=mount_point, fs_type=pieces[2],
-                               device=pieces[0], length=length, context=context,
-                               slotselect=slotselect)
+    if not d.get(mount_point):
+        d[mount_point] = Partition(mount_point=mount_point, fs_type=pieces[2],
+                                   device=pieces[0], length=length, context=context,
+                                   slotselect=slotselect)
 
   # / is used for the system mount point when the root directory is included in
   # system. Other areas assume system is always at "/system" so point /system
@@ -2885,6 +2886,11 @@ class DeviceSpecificParams(object):
     """Called at the end of full OTA installation; typically this is
     used to install the image for the device's baseband processor."""
     return self._DoCall("FullOTA_InstallEnd")
+
+  def FullOTA_PostValidate(self):
+    """Called after installing and validating /system; typically this is
+    used to resize the system partition after a block based installation."""
+    return self._DoCall("FullOTA_PostValidate")
 
   def IncrementalOTA_Assertions(self):
     """Called after emitting the block of assertions at the top of an

@@ -1894,6 +1894,8 @@ ifdef BUILDING_RECOVERY_IMAGE
 
 INTERNAL_RECOVERYIMAGE_FILES := $(filter $(TARGET_RECOVERY_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES))
+INTERNAL_RECOVERYIMAGE_FILES += $(filter $(PRODUCT_OUT)/install/%, \
+    $(ALL_DEFAULT_INSTALLED_MODULES))
 
 INSTALLED_FILES_FILE_RECOVERY := $(PRODUCT_OUT)/installed-files-recovery.txt
 INSTALLED_FILES_JSON_RECOVERY := $(INSTALLED_FILES_FILE_RECOVERY:.txt=.json)
@@ -1940,6 +1942,9 @@ recovery_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.img
 recovery_uncompressed_ramdisk := $(PRODUCT_OUT)/ramdisk-recovery.cpio
 recovery_resources_common := bootable/recovery/res
 
+ifneq (,$(TARGET_RECOVERY_DENSITY))
+recovery_density := $(filter %dpi,$(TARGET_RECOVERY_DENSITY))
+else
 # Set recovery_density to a density bucket based on TARGET_SCREEN_DENSITY, PRODUCT_AAPT_PREF_CONFIG,
 # or mdpi, in order of preference. We support both specific buckets (e.g. xdpi) and numbers,
 # which get remapped to a bucket.
@@ -1954,6 +1959,7 @@ recovery_density := $(strip \
        $(if $(filter $(shell echo $$(($(recovery_density_value) >= 400))),1),xxhdpi),\
        $(if $(filter $(shell echo $$(($(recovery_density_value) >= 280))),1),xhdpi),\
        $(if $(filter $(shell echo $$(($(recovery_density_value) >= 200))),1),hdpi,mdpi)))
+endif
 endif
 
 ifneq (,$(wildcard $(recovery_resources_common)-$(recovery_density)))
@@ -2047,6 +2053,16 @@ RECOVERY_ERROR_TEXT_FILE :=
 RECOVERY_NO_COMMAND_TEXT_FILE :=
 endif # TARGET_RECOVERY_UI_SCREEN_WIDTH
 
+ifneq ($(TARGET_RECOVERY_DEVICE_DIRS),)
+recovery_root_private := $(strip \
+  $(foreach d,$(TARGET_RECOVERY_DEVICE_DIRS), $(wildcard $(d)/recovery/root)))
+else
+recovery_root_private := $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery/root))
+endif
+ifneq ($(recovery_root_private),)
+recovery_root_deps := $(shell find $(recovery_root_private) -type f)
+endif
+
 ifndef TARGET_PRIVATE_RES_DIRS
 TARGET_PRIVATE_RES_DIRS := $(wildcard $(TARGET_DEVICE_DIR)/recovery/res)
 endif
@@ -2102,6 +2118,7 @@ INSTALLED_RECOVERY_BUILD_PROP_TARGET := $(TARGET_RECOVERY_ROOT_OUT)/prop.default
 
 $(INSTALLED_RECOVERY_BUILD_PROP_TARGET): PRIVATE_RECOVERY_UI_PROPERTIES := \
     TARGET_RECOVERY_UI_ANIMATION_FPS:animation_fps \
+    TARGET_RECOVERY_UI_BLANK_UNBLANK_ON_INIT:blank_unblank_on_init \
     TARGET_RECOVERY_UI_MARGIN_HEIGHT:margin_height \
     TARGET_RECOVERY_UI_MARGIN_WIDTH:margin_width \
     TARGET_RECOVERY_UI_MENU_UNUSABLE_ROWS:menu_unusable_rows \
@@ -2199,7 +2216,7 @@ $(INTERNAL_RECOVERY_RAMDISK_FILES_TIMESTAMP): $(MKBOOTFS) \
 	    $(INSTALLED_2NDBOOTLOADER_TARGET) \
 	    $(INSTALLED_RECOVERY_BUILD_PROP_TARGET) \
 	    $(INSTALLED_RECOVERY_RAMDISK_BUILD_PROP_TARGET) \
-	    $(recovery_resource_deps) \
+	    $(recovery_resource_deps) $(recovery_root_deps) \
 	    $(recovery_fstab)
 	# Making recovery image
 	mkdir -p $(TARGET_RECOVERY_OUT)
@@ -2219,10 +2236,12 @@ $(INTERNAL_RECOVERY_RAMDISK_FILES_TIMESTAMP): $(MKBOOTFS) \
 	$(foreach recovery_text_file,$(generated_recovery_text_files), \
 	  cp -rf $(recovery_text_file) $(TARGET_RECOVERY_ROOT_OUT)/res/images/ &&) true
 	cp -f $(recovery_font) $(TARGET_RECOVERY_ROOT_OUT)/res/images/font.png
+	$(foreach item,$(recovery_root_private), \
+	  cp -rf $(item) $(TARGET_RECOVERY_OUT)/;)
 	$(foreach item,$(TARGET_PRIVATE_RES_DIRS), \
-	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/$(newline))
+	  cp -rf $(item) $(TARGET_RECOVERY_ROOT_OUT)/$(newline);)
 	$(foreach item,$(recovery_fstab), \
-	  cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.fstab)
+	  cp -f $(item) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.fstab;)
 	$(if $(strip $(recovery_wipe)), \
 	  cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.wipe)
 	ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop
@@ -4983,6 +5002,9 @@ ifneq (true,$(BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT))
 	$(hide) $(call package_files-copy-root, \
 	    $(TARGET_RECOVERY_ROOT_OUT),$(zip_root)/$(PRIVATE_RECOVERY_OUT)/RAMDISK)
 endif
+	@# OTA install helpers
+	$(hide) $(call package_files-copy-root, \
+	    $(PRODUCT_OUT)/install,$(zip_root)/INSTALL)
 ifdef INSTALLED_KERNEL_TARGET
 ifneq (,$(filter true,$(BOARD_USES_RECOVERY_AS_BOOT)))
 	cp $(INSTALLED_KERNEL_TARGET) $(zip_root)/$(PRIVATE_RECOVERY_OUT)/
@@ -5371,6 +5393,7 @@ PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$(dir $(ZIP2ZIP)):$$PATH \
         --verbose \
         --extracted_input_target_files $(patsubst %.zip,%,$(BUILT_TARGET_FILES_PACKAGE)) \
         --path $(HOST_OUT) \
+        --backup=$(backuptool) \
         $(if $(OEM_OTA_CONFIG), --oem_settings $(OEM_OTA_CONFIG)) \
         $(2) \
         $(BUILT_TARGET_FILES_PACKAGE) $(1)
@@ -5384,6 +5407,16 @@ name := $(product_name)-ota-$(FILE_NAME_TAG)
 
 INTERNAL_OTA_PACKAGE_TARGET := $(PRODUCT_OUT)/$(name).zip
 INTERNAL_OTA_METADATA := $(PRODUCT_OUT)/ota_metadata
+
+ifeq ($(TARGET_BUILD_VARIANT),user)
+    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
+else
+ifneq ($(ARROW_BUILD),)
+    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := true
+else
+    $(INTERNAL_OTA_PACKAGE_TARGET): backuptool := false
+endif
+endif
 
 $(INTERNAL_OTA_PACKAGE_TARGET): KEY_CERT_PAIR := $(DEFAULT_KEY_CERT_PAIR)
 $(INTERNAL_OTA_PACKAGE_TARGET): .KATI_IMPLICIT_OUTPUTS := $(INTERNAL_OTA_METADATA)
