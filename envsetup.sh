@@ -50,10 +50,16 @@ Environment options:
 
 Look at the source to view more functions. The complete list is:
 EOF
+
+    __print_exthm_functions_help
+
+cat <<EOF
+
+EOF
     local T=$(gettop)
     local A=""
     local i
-    for i in `cat $T/build/envsetup.sh | sed -n "/^[[:blank:]]*function /s/function \([a-z_]*\).*/\1/p" | sort | uniq`; do
+    for i in `cat $T/build/envsetup.sh $T/vendor/exthm/build/envsetup.sh | sed -n "/^[[:blank:]]*function /s/function \([a-z_]*\).*/\1/p" | sort | uniq`; do
       A="$A $i"
     done
     echo $A
@@ -64,8 +70,8 @@ function build_build_var_cache()
 {
     local T=$(gettop)
     # Grep out the variable names from the script.
-    cached_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
-    cached_abs_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_abs_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
+    cached_vars=(`cat $T/build/envsetup.sh $T/vendor/exthm/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
+    cached_abs_vars=(`cat $T/build/envsetup.sh $T/vendor/exthm/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_abs_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
     # Call the build system to dump the "<val>=<value>" pairs as a shell script.
     build_dicts_script=`\builtin cd $T; build/soong/soong_ui.bash --dumpvars-mode \
                         --vars="${cached_vars[*]}" \
@@ -708,13 +714,13 @@ function lunch()
         # if we can't find a product, try to grab it off the ArrowOS GitHub
         T=$(gettop)
         cd $T > /dev/null
-        vendor/arrow/build/tools/roomservice.py $product
+        vendor/exthm/build/tools/roomservice.py $product
         cd - > /dev/null
         check_product $product
     else
         T=$(gettop)
         cd $T > /dev/null
-        vendor/arrow/build/tools/roomservice.py $product true
+        vendor/exthm/build/tools/roomservice.py $product true
         cd - > /dev/null
     fi
 
@@ -750,7 +756,7 @@ function lunch()
     [[ -n "${ANDROID_QUIET_BUILD:-}" ]] || printconfig
     destroy_build_var_cache
 
-    arrow_prebuilts
+    exthm_prebuilts
 }
 
 unset COMMON_LUNCH_CHOICES_CACHE
@@ -1920,3 +1926,5 @@ function exthm_prebuilts() {
         export EXTHM_PREBUILTS=1
     fi
 }
+
+. $ANDROID_BUILD_TOP/vendor/exthm/build/envsetup.sh
