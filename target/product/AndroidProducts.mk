@@ -32,6 +32,8 @@
 #
 
 # Unbundled apps will be built with the most generic product config.
+VENDOR_TARGET = vendor/exthm/build/target/product
+
 ifneq ($(TARGET_BUILD_APPS),)
 PRODUCT_MAKEFILES := \
     $(LOCAL_DIR)/aosp_arm64.mk \
@@ -78,9 +80,24 @@ PRODUCT_MAKEFILES += \
     $(LOCAL_DIR)/module_arm64.mk \
     $(LOCAL_DIR)/module_x86.mk \
     $(LOCAL_DIR)/module_x86_64.mk \
+    $(LOCAL_DIR)/sdk_arm64.mk \
+    $(LOCAL_DIR)/sdk.mk \
+    $(LOCAL_DIR)/sdk_phone_arm64.mk \
+    $(LOCAL_DIR)/sdk_phone_armv7.mk \
+    $(LOCAL_DIR)/sdk_phone_x86_64.mk \
+    $(LOCAL_DIR)/sdk_phone_x86.mk \
+    $(LOCAL_DIR)/sdk_x86_64.mk \
+    $(LOCAL_DIR)/sdk_x86.mk \
+    $(VENDOR_TARGET)/exthm_x86.mk \
+    $(VENDOR_TARGET)/exthm_x64.mk \
+
 
 COMMON_LUNCH_CHOICES := \
     aosp_arm64-eng \
     aosp_arm-eng \
     aosp_x86_64-eng \
     aosp_x86-eng \
+    sdk_phone_x86_64-eng \
+    sdk_phone_x86-eng \
+    exthm_x86-eng \
+    exthm_x64-eng \
